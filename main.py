@@ -194,8 +194,16 @@ add_edge_QG(QG, MBG)
 weight, solution = possible_solutions(QG, size)
 print(weight)
 
+
 # Each solution will draw the QG, the nodes is red represents the solution while the ones in yellow all other nodes
 for i in solution:
     color_map = ["red" if node in i else "yellow" for node in QG]
-    nx.draw_networkx(QG, node_color = color_map)
+    edges = QG.edges()
+    color_map_edges = []
+    for j in edges:
+        if QG[j[0]][j[1]]["value"] == 1:
+            color_map_edges.append("red")
+        else:
+            color_map_edges.append("green")
+    nx.draw_networkx(QG, node_color = color_map, edge_color = color_map_edges)
     plt.show()
