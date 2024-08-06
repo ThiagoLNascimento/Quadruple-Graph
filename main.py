@@ -171,8 +171,19 @@ def possible_solutions(QG, size): # Brute force attempt to select all possible s
 MBG = nx.Graph()
 size = create_MBG(MBG)
 
+# Add colors for edges
+edges = MBG.edges()
+color_map = []
+for i in edges:
+    if MBG[i[0]][i[1]]["genoma"][0] == 1:
+        color_map.append("red")
+    elif MBG[i[0]][i[1]]["genoma"][0] == 2:
+        color_map.append("blue")
+    else:
+        color_map.append("green")
+
 # A Draw of the MBG
-nx.draw_networkx(MBG)
+nx.draw_networkx(MBG, edge_color = color_map)
 plt.show()
 
 QG = nx.Graph()
