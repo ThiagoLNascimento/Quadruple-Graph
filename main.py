@@ -13,7 +13,7 @@ def create_MBG(MBG): # Read input file ("input.txt") to create the Multiple Brea
                      # The input needs to have a number N at the first line, representing the number of genes and each following line a different genoma
                      # each genoma consist of a sequence from 1 to N separated by a space and if a gene is reversed the number should be negative
 
-    f = open("Input.txt", "r")
+    f = open("input.txt", "r")
     lines = f.readlines()
     size = 0
     genoma = -1
