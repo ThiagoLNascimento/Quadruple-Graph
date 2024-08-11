@@ -1,6 +1,8 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import itertools
+import time
+import sys
 
 def add_edge(MBG, gene1, gene2, origin):
     if MBG.has_edge(gene1, gene2):
@@ -53,7 +55,8 @@ def create_MBG(MBG): # Read input file ("input.txt") to create the Multiple Brea
 
                 else:
                     vet.append(int(line[i]))
-    
+
+    f.close()
     return size
 
 def create_QG(QG, size): # Create Quadruple Graph, all nodes are ordered from lower to higher ie. 1T 2H or 1H 1T
@@ -133,38 +136,115 @@ def add_edge_QG(QG, MBG): # Add all edges to the Quadruple Graph
 def possible_solutions(QG, size): # Brute force attempt to select all possible solutions of max weight
                                   # If there are more than one optimal solution, this will return all viable ones.
     all_nodes = list(QG.nodes)
-    combination = itertools.combinations(all_nodes, size)
     total_weight = 0
+    aux = []
+    divided_subset = []
+    subset = []
     solution = []
-    for subset in combination:
-        aux = 0
-        divided_subset = []
-        for i in subset:
-            splited_i = i.split()
+    i = 0
+    while len(aux) < size:
+        splited_i = all_nodes[i].split()
+        if splited_i[0] not in divided_subset and splited_i[1] not in divided_subset:
+            aux.append(i)
             divided_subset.append(splited_i[0])
             divided_subset.append(splited_i[1])
+            subset.append(all_nodes[i])
+        i += 1
+    
+    len_all_nodes = len(all_nodes)
 
-        for i in divided_subset:
-            if divided_subset.count(i) > 1:
-                aux = 1
+    while aux[0] + size < len_all_nodes:
+        i = size - 1
+        while i < size:
+            if aux[0] + size >= len_all_nodes:
                 break
-        
-        if not aux:
+            if aux[i] == -1:
+                aux[i] = aux[i- 1] + 1
+                while True:
+                    if aux[i] < len_all_nodes:
+                        splited_i = all_nodes[aux[i]].split()
+                        if splited_i[0] in divided_subset or splited_i[1] in divided_subset:
+                            aux[i] += 1
+                        else:
+                            break
+                    else:
+                        break
+            else:
+                divided_subset.pop(i*2)
+                divided_subset.pop(i*2)
+                subset.pop(i)
+                aux[i] += 1
+                while True:
+                    if aux[i] < len_all_nodes:
+                        splited_i = all_nodes[aux[i]].split()
+                        if splited_i[0] in divided_subset or splited_i[1] in divided_subset:
+                            aux[i] += 1
+                        else:
+                            break
+                    else:
+                        break
+
+            if aux[i] == len_all_nodes:
+                aux[i] = -1
+                i -= 1
+            else:
+                splited_i = all_nodes[aux[i]].split()
+                divided_subset.append(splited_i[0])
+                divided_subset.append(splited_i[1])
+                subset.append(all_nodes[aux[i]])
+                i += 1
+
+        if len(divided_subset) == size + size:
             current_weight = 0
             for i in range (len(subset)):
                 current_weight = QG.nodes[subset[i]]["value"] + current_weight
                 for j in range(i + 1, len(subset)):
                     if QG.has_edge(subset[i], subset[j]):
                         current_weight = QG[subset[i]][subset[j]]["value"] + current_weight
-            
+                    
             if current_weight > total_weight:
                 total_weight = current_weight
-                solution = [subset]
+                solution = [subset.copy()]
             elif current_weight == total_weight:
-                solution.append(subset)
+                solution.append(subset.copy())
+
+    return total_weight, solution
+    # combination = itertools.combinations(all_nodes, size)
+    # total_weight = 0
+    # solution = []
+    # aux = 0
+    # for subset in combination:
+    #     aux = 0
+    #     divided_subset = []
+    #     for i in subset:
+    #         splited_i = i.split()
+    #         divided_subset.append(splited_i[0])
+    #         divided_subset.append(splited_i[1])
+
+    #     for i in divided_subset:
+    #         if divided_subset.count(i) > 1:
+    #             aux = 1
+    #             break
+        
+    #     if aux == 0:
+    #         current_weight = 0
+    #         for i in range (len(subset)):
+    #             current_weight = QG.nodes[subset[i]]["value"] + current_weight
+    #             for j in range(i + 1, len(subset)):
+    #                 if QG.has_edge(subset[i], subset[j]):
+    #                     current_weight = QG[subset[i]][subset[j]]["value"] + current_weight
+                
+    #         if current_weight > total_weight:
+    #             total_weight = current_weight
+    #             solution = [subset]
+    #         elif current_weight == total_weight:
+    #             solution.append(subset)
             
     
-    return total_weight, solution
+    
+
+
+start_time = time.time()
 
 # MBG refers to the multiple breakpoint graph, each edge has two attributes, called genoma, a list of all genomas it belongs (in case there are parallel edges)
 # value, to represent the the quantity of genomas that a single edge belongs to.
@@ -184,7 +264,8 @@ for i in edges:
 
 # A Draw of the MBG
 nx.draw_networkx(MBG, edge_color = color_map)
-plt.show()
+plt.savefig("images/MBG.png")
+plt.close()
 
 QG = nx.Graph()
 create_QG(QG, size)
@@ -192,11 +273,17 @@ create_QG(QG, size)
 add_edge_QG(QG, MBG)
 
 weight, solution = possible_solutions(QG, size)
-print(weight)
 
+f = open("ouptut.txt", "w")
+f.write("Weight = " + str(weight) + "\n")
 
+f.write("--- %s seconds ---" % (time.time() - start_time) + "\n")
 # Each solution will draw the QG, the nodes is red represents the solution while the ones in yellow all other nodes
+quant = 0
 for i in solution:
+    f.write(str(i) + "\n")
+    quant += 1
+    name = "images/Solution_" + str(quant)+  ".png"
     color_map = ["red" if node in i else "yellow" for node in QG]
     edges = QG.edges()
     color_map_edges = []
@@ -206,4 +293,7 @@ for i in solution:
         else:
             color_map_edges.append("green")
     nx.draw_networkx(QG, node_color = color_map, edge_color = color_map_edges)
+    plt.savefig(name)
     plt.show()
+
+f.close()
