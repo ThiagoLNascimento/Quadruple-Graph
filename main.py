@@ -1,8 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import itertools
+import os
 import time
-import sys
 
 def add_edge(MBG, gene1, gene2, origin):
     if MBG.has_edge(gene1, gene2):
@@ -15,14 +14,14 @@ def create_MBG(MBG): # Read input file ("input.txt") to create the Multiple Brea
                      # The input needs to have a number N at the first line, representing the number of genes and each following line a different genoma
                      # each genoma consist of a sequence from 1 to N separated by a space and if a gene is reversed the number should be negative
 
-    f = open("input.txt", "r")
-    lines = f.readlines()
+    f_in = open("input.txt", "r")
+    lines = f_in.readlines()
     size = 0
     genoma = -1
 
     # For each line it will add all edges and by consequence all nodes to the MBG
     for line in lines:
-
+        f.write(str(line))
         genoma = genoma + 1
         line = line.split()
         if len(line) == 1:
@@ -56,7 +55,7 @@ def create_MBG(MBG): # Read input file ("input.txt") to create the Multiple Brea
                 else:
                     vet.append(int(line[i]))
 
-    f.close()
+    f_in.close()
     return size
 
 def create_QG(QG, size): # Create Quadruple Graph, all nodes are ordered from lower to higher ie. 1T 2H or 1H 1T
@@ -209,42 +208,24 @@ def possible_solutions(QG, size): # Brute force attempt to select all possible s
                 solution.append(subset.copy())
 
     return total_weight, solution
-    # combination = itertools.combinations(all_nodes, size)
-    # total_weight = 0
-    # solution = []
-    # aux = 0
-    # for subset in combination:
-    #     aux = 0
-    #     divided_subset = []
-    #     for i in subset:
-    #         splited_i = i.split()
-    #         divided_subset.append(splited_i[0])
-    #         divided_subset.append(splited_i[1])
 
-    #     for i in divided_subset:
-    #         if divided_subset.count(i) > 1:
-    #             aux = 1
-    #             break
-        
-    #     if aux == 0:
-    #         current_weight = 0
-    #         for i in range (len(subset)):
-    #             current_weight = QG.nodes[subset[i]]["value"] + current_weight
-    #             for j in range(i + 1, len(subset)):
-    #                 if QG.has_edge(subset[i], subset[j]):
-    #                     current_weight = QG[subset[i]][subset[j]]["value"] + current_weight
-                
-    #         if current_weight > total_weight:
-    #             total_weight = current_weight
-    #             solution = [subset]
-    #         elif current_weight == total_weight:
-    #             solution.append(subset)
-            
-    
-    
 
+# Create directory to add the solutions
+try:
+    os.mkdir("solutions")
+except FileExistsError:
+    pass
+
+instance = 0
+while True:
+    try:
+        os.mkdir("solutions/instance_" + str(instance))
+        break
+    except FileExistsError:
+        instance += 1
 
 start_time = time.time()
+f = open("solutions/instance_" + str(instance) + "/output.txt", "w")
 
 # MBG refers to the multiple breakpoint graph, each edge has two attributes, called genoma, a list of all genomas it belongs (in case there are parallel edges)
 # value, to represent the the quantity of genomas that a single edge belongs to.
@@ -264,7 +245,7 @@ for i in edges:
 
 # A Draw of the MBG
 nx.draw_networkx(MBG, edge_color = color_map)
-plt.savefig("images/MBG.png")
+plt.savefig("solutions/instance_" + str(instance) + "/MBG.png")
 plt.close()
 
 QG = nx.Graph()
@@ -274,16 +255,17 @@ add_edge_QG(QG, MBG)
 
 weight, solution = possible_solutions(QG, size)
 
-f = open("ouptut.txt", "w")
+
 f.write("Weight = " + str(weight) + "\n")
 
 f.write("--- %s seconds ---" % (time.time() - start_time) + "\n")
+f.write("Optimal solutions: \n")
 # Each solution will draw the QG, the nodes is red represents the solution while the ones in yellow all other nodes
 quant = 0
 for i in solution:
     f.write(str(i) + "\n")
     quant += 1
-    name = "images/Solution_" + str(quant)+  ".png"
+    name = "solutions/instance_" + str(instance) + "/solution_" + str(quant)+  ".png"
     color_map = ["red" if node in i else "yellow" for node in QG]
     edges = QG.edges()
     color_map_edges = []
